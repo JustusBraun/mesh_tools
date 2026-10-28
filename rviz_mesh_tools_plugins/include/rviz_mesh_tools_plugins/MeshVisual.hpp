@@ -97,6 +97,9 @@ namespace rviz_mesh_tools_plugins
 class MeshVisual
 {
 public:
+  /// Key of the user binding that links the picked Ogre object back to its MeshVisual
+  static constexpr const char* USER_ANY_KEY = "rviz_mesh_tools_plugins::MeshVisual";
+
   /**
    * @brief Constructor.
    *
@@ -220,6 +223,16 @@ public:
    * @param mode The hardware culling mode
    */
   void setCullingMode(Ogre::CullingMode mode);
+
+  /**
+   * @brief Returns the hardware culling mode of the mesh.
+   */
+  Ogre::CullingMode getCullingMode() const { return m_cullingMode; }
+
+  /**
+   * @brief Returns the raw triangle mesh in the mesh frame.
+   */
+  const Geometry& getGeometry() const { return m_geometry; }
 
   /**
    * @brief Updates the visible parts of the mesh depending on input from the rviz display.

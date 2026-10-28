@@ -138,6 +138,8 @@ MeshVisual::MeshVisual(rviz_common::DisplayContext* context, size_t displayID, s
   m_mesh = sceneManager->createManualObject(sstm.str());
   m_mesh->setDynamic(false);
   m_mesh->setVisibilityFlags(context->getDefaultVisibilityBit());
+  // lets the interaction tools pick faces from m_geometry instead of reading back the GPU buffers
+  m_mesh->getUserObjectBindings().setUserAny(USER_ANY_KEY, Ogre::Any(this));
   m_sceneNode->attachObject(m_mesh);
 
   std::stringstream sstmNormals;
