@@ -249,29 +249,6 @@ public:
                       bool showVertexCosts, bool showTextures, bool showTexturedFacesOnly);
 
   /**
-   * @brief Updates the visible parts of the mesh depending on input from the rviz display.
-   *
-   * @param showWireframe         When TRUE wireframe is visible
-   * @param wireframeColor        The color of the wireframe
-   * @param wireframeAlpha        The transparency of the wireframe
-   * @param showFaces             When TRUE faces are visible
-   * @param facesColor            The color of the faces
-   * @param facesAlpha            The transparency of the faces
-   * @param useVertexColors       When TRUE vertex colors are used
-   * @param showVertexCosts       When TRUE vertex costs are visible
-   * @param showTextures          When TRUE textures are visible
-   * @param showTexturedFacesOnly When TRUE only textured faces are visible
-   * @param showNormals           When TRUE normals are visible
-   * @param normalsColor          The color of the normals
-   * @param normalsAlpha          The transparency of the normals
-   * @param normalsScallingFactor The size of the normals
-   */
-  void updateMaterial(bool showWireframe, Ogre::ColourValue wireframeColor, float wireframeAlpha, bool showFaces,
-                      Ogre::ColourValue facesColor, float facesAlpha, bool useVertexColors, bool showVertexCosts,
-                      bool showTextures, bool showTexturedFacesOnly, bool showNormals, Ogre::ColourValue normalsColor,
-                      float normalsAlpha, float normalsScallingFactor);
-
-  /**
    * @brief Updates the size of the normals dynamically.
    *
    * @param scallingFactor The factor the normals have to be scaled with
@@ -324,20 +301,28 @@ private:
 
   void showTextures(Ogre::Pass* pass);
 
-  void enteringGeneralTriangleMesh(const Geometry& mesh);
-
-  void enteringColoredTriangleMesh(const Geometry& mesh, const vector<Color>& vertexColors);
-
   void enteringTriangleMeshWithVertexCosts(const Geometry& mesh, const vector<float>& vertexCosts, int costColorType);
   void enteringTriangleMeshWithVertexCosts(const Geometry& mesh, const vector<float>& vertexCosts, int costColorType,
                                            float minCost, float maxCost);
 
   /**
-   * @brief Creates the vertex cost mesh with static positions and indices and a dynamic color buffer.
+   * @brief Creates the mesh with static positions and indices and a dynamic color buffer.
    */
-  void createVertexCostsMesh(const Geometry& mesh);
+  void createMesh(const Geometry& mesh);
 
-  void destroyVertexCostsMesh();
+  void destroyMesh();
+
+  /// Which colors are currently uploaded to the color buffer of m_mesh
+  enum class ColorSource
+  {
+    VertexColors,
+    VertexCosts
+  };
+
+  /**
+   * @brief Uploads the colors of the given source to the color buffer, if they are not already there.
+   */
+  void showColors(ColorSource source);
 
   void enteringTexturedTriangleMesh(const Geometry& mesh, const vector<Material>& meshMaterials,
                                     const vector<TexCoords>& texCoords);
@@ -380,27 +365,28 @@ private:
   /// Random ID of the created mesh
   size_t m_random;
 
-  /// The mesh-object to display
-  Ogre::ManualObject* m_mesh;
+  /// The entity to display the mesh with a fixed color, vertex colors or vertex costs.
+  /// Created when the geometry is set.
+  Ogre::Entity*       m_mesh = nullptr;
   bool                m_mesh_hidden = false;
+
+  /// The mesh behind m_mesh. Positions and colors are stored in separate
+  /// vertex buffers so that color changes only have to upload colors.
+  Ogre::MeshPtr m_meshResource;
+
+  /// The vertex buffer holding the colors of m_mesh
+  Ogre::HardwareVertexBufferSharedPtr m_colorBuffer;
+
+  /// The colors currently in m_colorBuffer
+  ColorSource m_uploadedColors = ColorSource::VertexColors;
+
+  /// CPU copies of the colors, white until colors or costs are received
+  std::vector<Ogre::ABGR> m_vertexColors;
+  std::vector<Ogre::ABGR> m_vertexCostColors;
 
   /// The manual object to display normals
   Ogre::ManualObject* m_normals;
   bool                m_normals_hidden = false;
-
-  /// The entity to display the mesh with vertex costs. Created when the first costs arrive.
-  Ogre::Entity*       m_vertexCostsMesh = nullptr;
-  bool                m_vertexCostsMesh_hidden = false;
-
-  /// The mesh behind m_vertexCostsMesh. Positions and colors are stored in separate
-  /// vertex buffers so that cost updates only have to upload colors.
-  Ogre::MeshPtr m_vertexCostsMeshResource;
-
-  /// The vertex buffer holding the colors of the vertex cost mesh
-  Ogre::HardwareVertexBufferSharedPtr m_vertexCostsColorBuffer;
-
-  /// CPU copy of the vertex cost colors, used to upload ranges of changed colors
-  std::vector<Ogre::ABGR> m_vertexCostsColors;
 
   /// The manual object to display the textured mesh
   Ogre::ManualObject* m_texturedMesh;
@@ -427,9 +413,6 @@ private:
 
   /// The materials of the not textured clusters
   Ogre::MaterialPtr m_noTexCluMaterial;
-
-  /// The material of the mesh with vertex costs
-  Ogre::MaterialPtr m_vertexCostMaterial;
 
   /// The materials of the textures
   std::vector<Ogre::MaterialPtr> m_textureMaterials;
