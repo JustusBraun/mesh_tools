@@ -75,6 +75,7 @@
 #include <OgreEntity.h>
 #include <OgreMaterialManager.h>
 #include <OgreColourValue.h>
+#include <OgreHardwareVertexBuffer.h>
 
 #include <rviz_mesh_tools_plugins/Types.hpp>
 #include <vector>
@@ -318,6 +319,13 @@ private:
   void enteringTriangleMeshWithVertexCosts(const Geometry& mesh, const vector<float>& vertexCosts, int costColorType,
                                            float minCost, float maxCost);
 
+  /**
+   * @brief Creates the vertex cost mesh with static positions and indices and a dynamic color buffer.
+   */
+  void createVertexCostsMesh(const Geometry& mesh);
+
+  void destroyVertexCostsMesh();
+
   void enteringTexturedTriangleMesh(const Geometry& mesh, const vector<Material>& meshMaterials,
                                     const vector<TexCoords>& texCoords);
 
@@ -367,9 +375,19 @@ private:
   Ogre::ManualObject* m_normals;
   bool                m_normals_hidden = false;
 
-  /// The manual object to display the mesh with vertex costs
-  Ogre::ManualObject* m_vertexCostsMesh;
+  /// The entity to display the mesh with vertex costs. Created when the first costs arrive.
+  Ogre::Entity*       m_vertexCostsMesh = nullptr;
   bool                m_vertexCostsMesh_hidden = false;
+
+  /// The mesh behind m_vertexCostsMesh. Positions and colors are stored in separate
+  /// vertex buffers so that cost updates only have to upload colors.
+  Ogre::MeshPtr m_vertexCostsMeshResource;
+
+  /// The vertex buffer holding the colors of the vertex cost mesh
+  Ogre::HardwareVertexBufferSharedPtr m_vertexCostsColorBuffer;
+
+  /// CPU copy of the vertex cost colors, used to upload ranges of changed colors
+  std::vector<Ogre::ABGR> m_vertexCostsColors;
 
   /// The manual object to display the textured mesh
   Ogre::ManualObject* m_texturedMesh;
